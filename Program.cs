@@ -1,126 +1,72 @@
 using System;
 
-// ==========================================================
-// Абстрактні продукти
-// ==========================================================
-
-public interface IOperatingRoom
+namespace AccountingSystem
 {
-    void Work();
-}
-
-public interface IMedicalDepartment
-{
-    void Serve();
-}
-
-// ==========================================================
-// Конкретні продукти (польова лікарня)
-// ==========================================================
-
-public class FieldOperatingRoom : IOperatingRoom
-{
-    public void Work()
+    // -------------------------------------------------------
+    // Інтерфейс принтера (для тестування і розширення)
+    // -------------------------------------------------------
+    public interface IReportPrinter
     {
-        Console.WriteLine("Польова операційна: базове хірургічне обладнання.");
-    }
-}
-
-public class FieldMedicalPoint : IMedicalDepartment
-{
-    public void Serve()
-    {
-        Console.WriteLine("Мобільний медпункт: перша допомога.");
-    }
-}
-
-// ==========================================================
-// Конкретні продукти (капітальна лікарня)
-// ==========================================================
-
-public class CapitalOperatingRoom : IOperatingRoom
-{
-    public void Work()
-    {
-        Console.WriteLine("Капітальна операційна: повний комплекс обладнання.");
-    }
-}
-
-public class CapitalReception : IMedicalDepartment
-{
-    public void Serve()
-    {
-        Console.WriteLine("Приймальне відділення: реєстрація та огляд.");
-    }
-}
-
-// ==========================================================
-// Абстрактна фабрика
-// ==========================================================
-
-public interface IHospitalFactory
-{
-    IOperatingRoom CreateOperatingRoom();
-    IMedicalDepartment CreateMedicalDepartment();
-}
-
-// ==========================================================
-// Конкретні фабрики
-// ==========================================================
-
-public class FieldHospitalFactory : IHospitalFactory
-{
-    public IOperatingRoom CreateOperatingRoom()
-    {
-        return new FieldOperatingRoom();
+        void Print(string reportText);
     }
 
-    public IMedicalDepartment CreateMedicalDepartment()
+    // -------------------------------------------------------
+    // Реалізація Singleton — Віртуальний бухгалтерський принтер
+    // -------------------------------------------------------
+    public sealed class VirtualPrinter : IReportPrinter
     {
-        return new FieldMedicalPoint();
+        // Лінива потокобезпечна ініціалізація
+        private static readonly Lazy<VirtualPrinter> _instance =
+            new Lazy<VirtualPrinter>(() => new VirtualPrinter());
+
+        // Публічний доступ
+        public static VirtualPrinter Instance => _instance.Value;
+
+        // Приватний конструктор — ніхто не створить екземпляр зовні
+        private VirtualPrinter()
+        {
+            Console.WriteLine(">>> Віртуальний принтер ініціалізовано.");
+        }
+
+        // Метод друку
+        public void Print(string reportText)
+        {
+            Console.WriteLine("----- ДРУК ЗВІТУ -----");
+            Console.WriteLine(reportText);
+            Console.WriteLine("----------------------");
+        }
     }
-}
 
-public class CapitalHospitalFactory : IHospitalFactory
-{
-    public IOperatingRoom CreateOperatingRoom()
+    // -------------------------------------------------------
+    // Клієнтська частина системи
+    // -------------------------------------------------------
+    public static class Program
     {
-        return new CapitalOperatingRoom();
-    }
+        public static void Main()
+        {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            Console.WriteLine("Введіть текст бухгалтерського звіту:");
 
-    public IMedicalDepartment CreateMedicalDepartment()
-    {
-        return new CapitalReception();
-    }
-}
+            string? text = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                Console.WriteLine("❗ Звіт порожній — друк скасовано.");
+                return;
+            }
 
-// ==========================================================
-// Клієнтський код
-// ==========================================================
+            // Отримання єдиного екземпляра принтера
+            IReportPrinter printer = VirtualPrinter.Instance;
 
-class Program
-{
-    static void Main()
-    {
-        Console.OutputEncoding = System.Text.Encoding.UTF8;
+            // Вивід звіту
+            printer.Print(text);
 
-        // Вибір типу лікарні
-        Console.WriteLine("Оберіть тип лікарні (1 – польова, 2 – капітальна):");
-        string choice = Console.ReadLine();
+            // Демонстрація, що екземпляр один
+            Console.WriteLine("\nПеревірка Singleton:");
+            Console.WriteLine(Object.ReferenceEquals(printer, VirtualPrinter.Instance)
+                ? "Так, це один і той самий екземпляр."
+                : "Помилка: створено кілька екземплярів!");
 
-        IHospitalFactory factory;
-
-        if (choice == "1")
-            factory = new FieldHospitalFactory();
-        else
-            factory = new CapitalHospitalFactory();
-
-        // Створення компонентів
-        var operatingRoom = factory.CreateOperatingRoom();
-        var department = factory.CreateMedicalDepartment();
-
-        // Використання
-        operatingRoom.Work();
-        department.Serve();
+            Console.WriteLine("\nРобота завершена.");
+        }
     }
 }
